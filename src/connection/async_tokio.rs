@@ -4,11 +4,13 @@
 //!
 //! # Asynchronous connections
 //!
-//! ## [`interprocess`] support
-//! [`interprocess`] has built-in support for asynchronous connections using [`tokio`](tokio).
+//! This module provides an asynchronous implementation of [`Listener`] and [`Connection`], powered by [`tokio`].
+//! It is specifically for Tokio as [`interprocess`] has built-in support for asynchronous connections using it.
+//!
+//! ## Examples
+//!
+//! See the [`async-tokio` example directory](https://github.com/tecc/gipc/tree/dev/examples/async-tokio) for both an example client and listener.
 
-use std::pin::Pin;
-use std::task::{Context, Poll};
 use async_trait::async_trait;
 use interprocess::local_socket::tokio::{LocalSocketListener, LocalSocketStream};
 use futures_io::{AsyncRead, AsyncWrite};
@@ -100,7 +102,7 @@ impl Connection {
         let message = self._receive().await?;
         match message {
             Message::ClosingConnection => {
-                self._close();
+                self._close().await;
                 Err(Error::Closed(true))
             }
             Message::Data(data) => Ok(data)

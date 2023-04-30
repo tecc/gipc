@@ -22,7 +22,7 @@ pub mod raw {
     #[cfg(feature = "async-tokio")]
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     #[cfg(feature = "async-tokio")]
-    use tokio_util::compat::{FuturesAsyncReadCompatExt, FuturesAsyncWriteCompatExt, Compat};
+    use tokio_util::compat::{Compat};
 
     fn serialised_vec(data: &Vec<u8>) -> Result<Vec<u8>> {
         use byteorder::WriteBytesExt;

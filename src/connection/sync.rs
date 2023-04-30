@@ -1,8 +1,14 @@
 //! Synchronous connections using [`interprocess`].
+//! For listeners, the asynchronous [`async_tokio`](super::async_tokio) module is recommended.
 //!
 //! # Synchronous connection module
-//! This module provides a synchronous implementation of [`Listener`] and [`Connection`].
 //!
+//! This module provides a synchronous implementation of [`Listener`] and [`Connection`].
+//! These are well-suited for clients that don't have a need to be asynchronous.
+//!
+//! ## Examples
+//!
+//! See the [sync example directory](https://github.com/tecc/gipc/tree/dev/examples/sync) for both an example client and listener.
 
 use std::io::{Read, Write};
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream};
