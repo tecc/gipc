@@ -2,7 +2,7 @@
 
 This example shows how you can go about implementing a _synchronous_ listener and connection using gipc.
 
-Note that listeners are recommended to use the asynchronous library instead.
+Note that listeners are recommended to use the [`async-tokio`](../async-tokio) implementation instead.
 
 ## Run this example
 
