@@ -56,7 +56,13 @@ impl Listener {
         self.closed = true; // we set it to closed either way
         self.internal.close()
     }
+
+    /// Check if this listener is closed.
+    pub fn is_closed(&self) -> bool {
+        self.closed
+    }
 }
+
 impl Drop for Listener {
     fn drop(&mut self) {
         let _ = self.close();
@@ -138,7 +144,13 @@ impl Connection {
         let _ = self._send::<()>(Message::ClosingConnection);
         self._close();
     }
+
+    /// Check if this connection is closed.
+    pub fn is_closed(&self) -> bool {
+        self.closed
+    }
 }
+
 impl Drop for Connection {
     fn drop(&mut self) {
         self.close();
@@ -166,6 +178,7 @@ impl ListenerImpl for LocalSocketListener {
         Ok(())
     }
 }
+
 impl From<LocalSocketListener> for Listener {
     fn from(value: LocalSocketListener) -> Self {
         Self::new(Box::new(value))
@@ -185,6 +198,7 @@ impl ConnectionImpl for LocalSocketStream {
         let _ = self.flush();
     }
 }
+
 impl From<LocalSocketStream> for Connection {
     fn from(value: LocalSocketStream) -> Self {
         Connection::new(Box::new(value))

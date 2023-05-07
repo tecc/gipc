@@ -22,8 +22,9 @@ use crate::message::Message;
 /// Listeners allow you to wait until new [`Connection`s](Connection) can be established.
 pub struct Listener {
     internal: Box<dyn ListenerImpl>,
-    closed: bool
+    closed: bool,
 }
+
 impl Listener {
     /// Creates a new listener based on a specified [`ListenerImpl`].
     /// Generally, you won't call this directly unless you're extending gipc.
@@ -54,19 +55,26 @@ impl Listener {
         self.closed = true; // we set it to closed either way
         self.internal.close().await
     }
+
+    /// Check if this listener is closed.
+    pub fn is_closed(&self) -> bool {
+        self.closed
+    }
 }
+
 /// Connections represent a two-way bidirectional stream that you can send and receive messages through.
 pub struct Connection {
     internal: Box<dyn ConnectionImpl>,
-    closed: bool
+    closed: bool,
 }
+
 impl Connection {
     /// Creates a new connection based on a specified [`ConnectionImpl`].
     /// Generally, you won't call this directly unless you're extending gipc.
     pub const fn new(internal: Box<dyn ConnectionImpl>) -> Self {
         Self {
             internal,
-            closed: false
+            closed: false,
         }
     }
     /// Connects to a socket using a name based on `name`.
@@ -130,6 +138,11 @@ impl Connection {
         let _ = self._send::<()>(Message::ClosingConnection);
         self._close().await;
     }
+
+    /// Check if this connection is closed.
+    pub fn is_closed(&self) -> bool {
+        self.closed
+    }
 }
 
 /// Listener implementation.
@@ -142,6 +155,7 @@ pub trait ListenerImpl: Send + Unpin {
     /// After this function is called, no more functions will be called from the implementation.
     async fn close(&mut self) -> Result<()>;
 }
+
 #[async_trait]
 impl ListenerImpl for LocalSocketListener {
     async fn accept(&mut self) -> Result<Connection> {
@@ -166,6 +180,7 @@ impl ConnectionImpl for LocalSocketStream {
         // Once again, do nothing
     }
 }
+
 impl From<LocalSocketStream> for Connection {
     fn from(value: LocalSocketStream) -> Self {
         Connection::new(Box::new(value))
