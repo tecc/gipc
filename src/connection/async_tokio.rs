@@ -109,6 +109,12 @@ impl Connection {
         }
     }
 
+    /// Shorthand for calling [`send`] and [`receive`] after one another.
+    pub async fn send_and_receive<'de, A, B>(&mut self, data: &A) -> Result<B> where A: Serialize, B: Deserialize<'de> {
+        self.send(data).await?;
+        self.receive().await
+    }
+
     async fn _close(&mut self) {
         self.internal.close().await;
         self.closed = true;

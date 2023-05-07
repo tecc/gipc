@@ -118,7 +118,7 @@ impl Connection {
         }
     }
     /// Shorthand for calling [`send`](Self::send) and [`receive`](Self::receive) after one another.
-    pub fn send_and_receive<'de, A, B>(&mut self, data: &A) -> Result<Message<B>> where A: Serialize, B: Deserialize<'de> {
+    pub fn send_and_receive<'de, A, B>(&mut self, data: &A) -> Result<B> where A: Serialize, B: Deserialize<'de> {
         self.send(data)?;
         self.receive()
     }
