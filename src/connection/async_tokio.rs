@@ -43,6 +43,9 @@ impl Listener {
 
     /// Accept a new connection.
     pub async fn accept(&mut self) -> Result<Connection> {
+        if self.closed {
+            return Err(Error::Closed(false));
+        }
         self.internal.accept().await
     }
 
