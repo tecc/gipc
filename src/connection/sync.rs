@@ -12,7 +12,8 @@
 
 use std::io::{Read, Write};
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
+use serde::de::DeserializeOwned;
 use crate::{Error, Result};
 use super::interprocess::name_onto;
 use crate::message::Message;
@@ -94,7 +95,7 @@ impl Connection {
     fn _send<T>(&mut self, message: Message<T>) -> Result<()> where T: Serialize {
         message.write_to(&mut self.internal)
     }
-    fn _receive<'de, T>(&mut self) -> Result<Message<T>> where T: Deserialize<'de> {
+    fn _receive<T>(&mut self) -> Result<Message<T>> where T: DeserializeOwned {
         Message::<T>::read_from(&mut self.internal)
     }
 
@@ -110,7 +111,7 @@ impl Connection {
     /// Receive a message from this connection.
     /// Will immediately fail with [`Error::Closed(false)`] if this connection is already closed,
     /// or fail with [`Error::Closed(true)`] if this connection was closed whilst trying to read the message.
-    pub fn receive<'de, T>(&mut self) -> Result<T> where T: Deserialize<'de> {
+    pub fn receive<T>(&mut self) -> Result<T> where T: DeserializeOwned {
         if self.closed {
             return Err(Error::Closed(false));
         }
@@ -124,7 +125,7 @@ impl Connection {
         }
     }
     /// Shorthand for calling [`send`](Self::send) and [`receive`](Self::receive) after one another.
-    pub fn send_and_receive<'de, A, B>(&mut self, data: &A) -> Result<B> where A: Serialize, B: Deserialize<'de> {
+    pub fn send_and_receive<A, B>(&mut self, data: &A) -> Result<B> where A: Serialize, B: DeserializeOwned {
         self.send(data)?;
         self.receive()
     }

@@ -1,7 +1,7 @@
 //! Communication structures for the protocol. This is generally for internal use by gipc.
 
 use std::io::{Read, Write};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize, de::DeserializeOwned}; // NOTE(tecc): Keeping Deserialize allows compatibility with older versions of Ciborium 
 #[cfg(feature = "async-tokio")]
 use futures_io::{AsyncWrite, AsyncRead};
 
@@ -83,7 +83,7 @@ pub enum Message<T> {
 impl<T> Message<T> {
     /// Reads a [`Message`] from `reader`.
     #[cfg(feature = "sync")]
-    pub fn read_from<'de, R>(reader: &mut R) -> Result<Self> where T: Deserialize<'de>, R: Read {
+    pub fn read_from<R>(reader: &mut R) -> Result<Self> where T: DeserializeOwned, R: Read {
         let raw = raw::read_from(reader)?;
         let deserialised: Self = ciborium::de::from_reader(raw.as_slice())
             .map_err(|v| Error::Deserialise(v.to_string()))?;
@@ -103,11 +103,11 @@ impl<T> Message<T> {
 
     /// Reads a [`Message`] from `reader` asynchronously.
     #[cfg(feature = "async-tokio")]
-    pub async fn read_from_async<'de, R>(reader: R) -> Result<Self> where T: Deserialize<'de>, R: AsyncRead + Unpin {
+    pub async fn read_from_async<R>(reader: R) -> Result<Self> where T: DeserializeOwned, R: AsyncRead + Unpin {
         use tokio_util::compat::{FuturesAsyncReadCompatExt};
         let mut reader = reader.compat();
         let raw = raw::read_from_async(&mut reader).await?;
-        let deserialised: Self = ciborium::de::from_reader::<'de>(raw.as_slice())
+        let deserialised: Self = ciborium::de::from_reader(raw.as_slice())
             .map_err(|v| Error::Deserialise(v.to_string()))?;
 
         Ok(deserialised)

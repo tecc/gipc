@@ -11,10 +11,15 @@
 //!
 //! See the [`async-tokio` example directory](https://github.com/tecc/gipc/tree/dev/examples/async-tokio) for both an example client and listener.
 
+use super::interprocess::name_onto;
+use crate::message::Message;
+use crate::{Error, Result};
 use async_trait::async_trait;
+use futures_io::{AsyncRead, AsyncWrite};
 use interprocess::local_socket::tokio::{LocalSocketListener, LocalSocketStream};
 use futures_io::{AsyncRead, AsyncWrite};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 use crate::{Result, Error};
 use super::interprocess::name_onto;
 use crate::message::Message;
@@ -90,7 +95,7 @@ impl Connection {
     async fn _send<T>(&mut self, message: Message<T>) -> Result<()> where T: Serialize {
         message.write_to_async(&mut self.internal).await
     }
-    async fn _receive<'de, T>(&mut self) -> Result<Message<T>> where T: Deserialize<'de> {
+    async fn _receive<T>(&mut self) -> Result<Message<T>> where T: DeserializeOwned {
         Message::<T>::read_from_async(&mut self.internal).await
     }
 
@@ -106,7 +111,7 @@ impl Connection {
     /// Receive a message from this connection.
     /// Will immediately fail with [`Error::Closed(false)`](Error::Closed) if this connection is already closed,
     /// or fail with [`Error::Closed(true)`](Error::Closed) if this connection was closed whilst trying to read the message.
-    pub async fn receive<'de, T>(&mut self) -> Result<T> where T: Deserialize<'de> {
+    pub async fn receive<T>(&mut self) -> Result<T> where T: DeserializeOwned {
         if self.closed {
             return Err(Error::Closed(false));
         }
@@ -121,7 +126,7 @@ impl Connection {
     }
 
     /// Shorthand for calling [`send`] and [`receive`] after one another.
-    pub async fn send_and_receive<'de, A, B>(&mut self, data: &A) -> Result<B> where A: Serialize, B: Deserialize<'de> {
+    pub async fn send_and_receive<A, B>(&mut self, data: &A) -> Result<B> where A: Serialize, B: DeserializeOwned {
         self.send(data).await?;
         self.receive().await
     }
