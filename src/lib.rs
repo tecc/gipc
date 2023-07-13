@@ -11,8 +11,8 @@
 //!
 //! Any errors the crate can return are in the [`error`] module.
 
-pub mod message;
 pub mod connection;
 pub mod error;
+pub mod message;
 
 pub use error::{Error, Result};

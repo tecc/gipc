@@ -1,5 +1,5 @@
-use gipc::connection::{AsyncListener, AsyncConnection};
 use crate::NAME;
+use gipc::connection::{AsyncConnection, AsyncListener};
 
 pub async fn main() {
     // Now, here's where gipc really shines - asynchronous listening allows
@@ -8,7 +8,8 @@ pub async fn main() {
 
     // You begin by setting up a listener like so, much like the synchronous example
     //
-    let mut listener = AsyncListener::listen_as_socket(NAME, false).expect("Couldn't listen! That's sad.");
+    let mut listener =
+        AsyncListener::listen_as_socket(NAME, false).expect("Couldn't listen! That's sad.");
 
     // However, here things change!
     // Unlike the synchronous listener, which would need a lot more code to allow for handling
@@ -23,7 +24,7 @@ pub async fn main() {
         handles.push(tokio::spawn(handle_connection(connection)));
         // This break is here to let the example exit - in reality, you should only break
         // when the listener should be closed (e.g. when the application is shutting down).
-        break
+        break;
     }
     println!("[listener] Welp, seems there are no more connections for me!");
 
@@ -42,22 +43,35 @@ pub async fn main() {
 async fn handle_connection(mut connection: AsyncConnection) {
     // This code is effectively the same as the synchronous example.
     // You send messages using the `send` method,
-    connection.send(&"Hello, client!").await.expect("Couldn't send greeting!");
+    connection
+        .send(&"Hello, client!")
+        .await
+        .expect("Couldn't send greeting!");
     // and receive messages using the `receive` method.
-    let greeting: String = connection.receive().await.expect("Couldn't accept greeting!");
+    let greeting: String = connection
+        .receive()
+        .await
+        .expect("Couldn't accept greeting!");
     if greeting == "Hello, server!" {
         println!("[handler] Yay, the client greeted me!");
     }
 
-    let weather_question: String = connection.receive().await.expect("Couldn't receive weather questions!");
+    let weather_question: String = connection
+        .receive()
+        .await
+        .expect("Couldn't receive weather questions!");
 
     if weather_question == "What's the weather like today?" {
+        println!("[handler] Ah, the weather? Last I checked it was sunny.");
         // Once again, you can inline both `send` and `receive` by using `send_and_receive`.
-        let thoughts_on_the_weather: String = connection.send_and_receive(&"sunny").await.expect("Couldn't receive thoughts about the weather");
+        let thoughts_on_the_weather: String = connection
+            .send_and_receive(&"sunny")
+            .await
+            .expect("Couldn't receive thoughts about the weather");
         if thoughts_on_the_weather != "That's nice!" {
             panic!("Oh no! The client didn't think the weather was nice!");
         }
-        println!("[listener] The client thought the weather was nice! Well, let's close this connection now.");
+        println!("[handler] The client thought the weather was nice! Well, let's close this connection now.");
     }
 
     // Asynchronous connections must be closed manually, for the same reasons as the listener.

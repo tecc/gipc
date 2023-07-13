@@ -17,12 +17,8 @@ use crate::{Error, Result};
 use async_trait::async_trait;
 use futures_io::{AsyncRead, AsyncWrite};
 use interprocess::local_socket::tokio::{LocalSocketListener, LocalSocketStream};
-use futures_io::{AsyncRead, AsyncWrite};
-use serde::Serialize;
 use serde::de::DeserializeOwned;
-use crate::{Result, Error};
-use super::interprocess::name_onto;
-use crate::message::Message;
+use serde::Serialize;
 
 /// Listeners allow you to wait until new [`Connection`s](Connection) can be established.
 pub struct Listener {
@@ -41,7 +37,10 @@ impl Listener {
     }
     /// Listens to a socket on the local machine with a name based on `name`.
     /// The actual name used is generated internally.
-    pub fn listen_as_socket<S>(name: S, global: bool) -> Result<Self> where S: AsRef<str> {
+    pub fn listen_as_socket<S>(name: S, global: bool) -> Result<Self>
+    where
+        S: AsRef<str>,
+    {
         let bound = name_onto!(LocalSocketListener::bind; name, global)?;
         Ok(Self::new(Box::new(bound)))
     }
@@ -87,21 +86,33 @@ impl Connection {
     }
     /// Connects to a socket using a name based on `name`.
     /// The actual name used is generated internally.
-    pub async fn connect_to_socket<S>(name: S, global: bool) -> Result<Self> where S: AsRef<str> {
+    pub async fn connect_to_socket<S>(name: S, global: bool) -> Result<Self>
+    where
+        S: AsRef<str>,
+    {
         let bound = name_onto!(await LocalSocketStream::connect; name, global)?;
         Ok(Self::new(Box::new(bound)))
     }
 
-    async fn _send<T>(&mut self, message: Message<T>) -> Result<()> where T: Serialize {
+    async fn _send<T>(&mut self, message: Message<T>) -> Result<()>
+    where
+        T: Serialize,
+    {
         message.write_to_async(&mut self.internal).await
     }
-    async fn _receive<T>(&mut self) -> Result<Message<T>> where T: DeserializeOwned {
+    async fn _receive<T>(&mut self) -> Result<Message<T>>
+    where
+        T: DeserializeOwned,
+    {
         Message::<T>::read_from_async(&mut self.internal).await
     }
 
     /// Send a message through this connection.
     /// Will immediately fail with [`Error::Closed(false)`](Error::Closed) if this connection is already closed.
-    pub async fn send<T>(&mut self, message_data: T) -> Result<()> where T: Serialize {
+    pub async fn send<T>(&mut self, message_data: T) -> Result<()>
+    where
+        T: Serialize,
+    {
         if self.closed {
             return Err(Error::Closed(false));
         }
@@ -111,7 +122,10 @@ impl Connection {
     /// Receive a message from this connection.
     /// Will immediately fail with [`Error::Closed(false)`](Error::Closed) if this connection is already closed,
     /// or fail with [`Error::Closed(true)`](Error::Closed) if this connection was closed whilst trying to read the message.
-    pub async fn receive<T>(&mut self) -> Result<T> where T: DeserializeOwned {
+    pub async fn receive<T>(&mut self) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
         if self.closed {
             return Err(Error::Closed(false));
         }
@@ -121,12 +135,16 @@ impl Connection {
                 self._close().await;
                 Err(Error::Closed(true))
             }
-            Message::Data(data) => Ok(data)
+            Message::Data(data) => Ok(data),
         }
     }
 
     /// Shorthand for calling [`send`] and [`receive`] after one another.
-    pub async fn send_and_receive<A, B>(&mut self, data: &A) -> Result<B> where A: Serialize, B: DeserializeOwned {
+    pub async fn send_and_receive<A, B>(&mut self, data: &A) -> Result<B>
+    where
+        A: Serialize,
+        B: DeserializeOwned,
+    {
         self.send(data).await?;
         self.receive().await
     }

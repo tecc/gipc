@@ -1,4 +1,3 @@
-
 macro_rules! name_onto {
     (await $func:path; $name:expr, $global:expr) => {
         name_onto!($func, ., await; $name, $global)
