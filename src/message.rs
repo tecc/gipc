@@ -1,4 +1,5 @@
 //! Communication structures for the protocol. This is generally for internal use by gipc.
+//! It is exposed as any change to the protocol is useful for the general consumer, as well as allowing for custom implementations of connections should that be required.
 
 #[cfg(feature = "async-tokio")]
 use futures_io::{AsyncRead, AsyncWrite};
@@ -11,7 +12,8 @@ type Endian = byteorder::BigEndian;
 
 /// Module for the raw reading and writing of messages.
 /// This is the true core of how gipc works - any change to this module is dangerous.
-pub mod raw {
+/// It is also not exposed as this module does not have any relation to any users of gipc.
+mod raw {
     use super::Endian;
     use crate::Result;
     #[cfg(feature = "async-tokio")]
@@ -95,6 +97,7 @@ pub enum Message<T> {
 impl<T> Message<T> {
     /// Reads a [`Message`] from `reader`.
     #[cfg(feature = "sync")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "sync")))]
     pub fn read_from<R>(reader: &mut R) -> Result<Self>
     where
         T: DeserializeOwned,
@@ -108,6 +111,7 @@ impl<T> Message<T> {
     }
     /// Writes this [`Message`] to `writer`.
     #[cfg(feature = "sync")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "sync")))]
     pub fn write_to<W>(&self, writer: &mut W) -> Result<()>
     where
         T: Serialize,
@@ -123,6 +127,7 @@ impl<T> Message<T> {
 
     /// Reads a [`Message`] from `reader` asynchronously.
     #[cfg(feature = "async-tokio")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "async-tokio")))]
     pub async fn read_from_async<R>(reader: R) -> Result<Self>
     where
         T: DeserializeOwned,
@@ -139,6 +144,7 @@ impl<T> Message<T> {
 
     /// Writes this [`Message`] to `writer` asynchronously.
     #[cfg(feature = "async-tokio")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "async-tokio")))]
     pub async fn write_to_async<W>(&self, writer: W) -> Result<()>
     where
         T: Serialize,

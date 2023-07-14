@@ -1,4 +1,6 @@
 #![warn(missing_docs)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, allow(unused_attributes))]
 //! **General Interprocess Communication** (or *gipc*) is a library that abstracts away common things in
 //! interprocess communication to speed up development and reduce errors.
 //!

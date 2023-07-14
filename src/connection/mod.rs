@@ -9,11 +9,15 @@
 pub(crate) mod interprocess;
 
 #[cfg(feature = "sync")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sync")))]
 pub mod sync;
 #[cfg(feature = "sync")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sync")))]
 pub use sync::{Connection, Listener};
 
 #[cfg(feature = "async-tokio")]
+#[cfg_attr(docsrs, doc(cfg(feature = "async-tokio")))]
 pub mod async_tokio;
 #[cfg(feature = "async-tokio")]
+#[cfg_attr(docsrs, doc(cfg(feature = "async-tokio")))]
 pub use async_tokio::{Connection as AsyncConnection, Listener as AsyncListener};
