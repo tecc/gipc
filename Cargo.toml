@@ -44,4 +44,5 @@ name = "async-tokio"
 required-features = ["async-tokio"]
 
 [package.metadata.docs.rs]
-features = ["sync", "async-tokio"]
+features = ["sync", "async-tokio", "tokio/full"]
+rustc-args = ["--cfg", "docsrs"]
