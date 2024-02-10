@@ -5,13 +5,13 @@ pub fn main() {
     println!("[listener] Listening to socket {}", NAME);
     // You begin by setting up a listener, much like you do a connection (see the client example).
     // The only difference is that you cannot begin sending and receiving messages yet.
-    let mut listener =
+    let listener =
         Listener::listen_as_socket(NAME, false).expect("Couldn't listen! That's sad.");
 
     // And then you just accept incoming connections!
     // This is a bad implementation, however - this can only handle one connection at a time!
     // See the async example for a better example on how a listener should work.
-    while let Ok(mut connection) = listener.accept() {
+    while let Ok(connection) = listener.accept() {
         // Once you've accepted the connection, everything works precisely like it does on
         // the client-side - this is because gipc uses the same type to represent a connection
         // from a client to a listener as it does for the listener to a client.

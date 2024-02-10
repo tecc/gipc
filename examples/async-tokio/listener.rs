@@ -8,7 +8,7 @@ pub async fn main() {
 
     // You begin by setting up a listener like so, much like the synchronous example
     //
-    let mut listener =
+    let listener =
         AsyncListener::listen_as_socket(NAME, false).expect("Couldn't listen! That's sad.");
 
     // However, here things change!
@@ -40,7 +40,7 @@ pub async fn main() {
 }
 
 // This is the code that handles the connections to the listener
-async fn handle_connection(mut connection: AsyncConnection) {
+async fn handle_connection(connection: AsyncConnection) {
     // This code is effectively the same as the synchronous example.
     // You send messages using the `send` method,
     connection

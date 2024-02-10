@@ -17,11 +17,15 @@ use interprocess::local_socket::{LocalSocketListener, LocalSocketStream};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::io::{Read, Write};
+use std::sync::{Mutex};
 
 /// Listeners allow you to wait until new [`Connection`s](Connection) can be established.
 pub struct Listener {
+    inner: Mutex<ListenerInner>
+}
+struct ListenerInner {
     internal: Box<dyn ListenerImpl>,
-    closed: bool,
+    closed: bool
 }
 
 impl Listener {
@@ -29,8 +33,10 @@ impl Listener {
     /// Generally, you won't call this directly unless you're extending gipc.
     pub const fn new(internal: Box<dyn ListenerImpl>) -> Self {
         Self {
-            internal,
-            closed: false,
+            inner: Mutex::new(ListenerInner {
+                internal,
+                closed: false,
+            })
         }
     }
 
@@ -45,25 +51,27 @@ impl Listener {
     }
 
     /// Accept a new connection.
-    pub fn accept(&mut self) -> Result<Connection> {
-        if self.closed {
+    pub fn accept(&self) -> Result<Connection> {
+        let mut guard = self.inner.lock()?;
+        if guard.closed {
             return Err(Error::Closed(false));
         }
-        self.internal.accept()
+        guard.internal.accept()
     }
     /// Closes this listener, returning any error that occurred whilst closing it.
     /// After calling this function, all other methods will immediately return [`Error::Closed(false)`](Error::Closed) if called.
-    pub fn close(&mut self) -> Result<()> {
-        if self.closed {
+    pub fn close(&self) -> Result<()> {
+        let mut guard = self.inner.lock()?;
+        if guard.closed {
             return Err(Error::Closed(false));
         }
-        self.closed = true; // we set it to closed either way
-        self.internal.close()
+        guard.closed = true; // we set it to closed either way
+        guard.internal.close()
     }
 
     /// Check if this listener is closed.
     pub fn is_closed(&self) -> bool {
-        self.closed
+        self.inner.lock().map(|v| v.closed).unwrap_or(true)
     }
 }
 
@@ -75,8 +83,30 @@ impl Drop for Listener {
 
 /// Connections represent a two-way bidirectional stream that you can send and receive messages through.
 pub struct Connection {
+    inner: Mutex<ConnectionInner>
+}
+struct ConnectionInner {
     internal: Box<dyn ConnectionImpl>,
     closed: bool,
+}
+
+impl ConnectionInner {
+    fn _send<T>(&mut self, message: Message<T>) -> Result<()>
+        where
+            T: Serialize,
+    {
+        message.write_to(&mut self.internal)
+    }
+    fn _receive<T>(&mut self) -> Result<Message<T>>
+        where
+            T: DeserializeOwned,
+    {
+        Message::<T>::read_from(&mut self.internal)
+    }
+    fn _close(&mut self) {
+        self.internal.close();
+        self.closed = true;
+    }
 }
 
 impl Connection {
@@ -84,8 +114,10 @@ impl Connection {
     /// Generally, you won't call this directly unless you're extending gipc.
     pub const fn new(internal: Box<dyn ConnectionImpl>) -> Self {
         Self {
-            internal,
-            closed: false,
+            inner: Mutex::new(ConnectionInner {
+                internal,
+                closed: false,
+            })
         }
     }
     /// Connects to a socket using a name based on `name`.
@@ -98,52 +130,41 @@ impl Connection {
         Ok(Self::new(Box::new(bound)))
     }
 
-    fn _send<T>(&mut self, message: Message<T>) -> Result<()>
-    where
-        T: Serialize,
-    {
-        message.write_to(&mut self.internal)
-    }
-    fn _receive<T>(&mut self) -> Result<Message<T>>
-    where
-        T: DeserializeOwned,
-    {
-        Message::<T>::read_from(&mut self.internal)
-    }
-
     /// Send a message through this connection.
     /// Will immediately fail with [`Error::Closed(false)`] if this connection is already closed.
-    pub fn send<T>(&mut self, message_data: &T) -> Result<()>
+    pub fn send<T>(&self, message_data: &T) -> Result<()>
     where
         T: Serialize,
     {
-        if self.closed {
+        let mut inner = self.inner.lock()?;
+        if inner.closed {
             return Err(Error::Closed(false));
         }
         let message = Message::Data(message_data);
-        self._send(message)
+        inner._send(message)
     }
     /// Receive a message from this connection.
     /// Will immediately fail with [`Error::Closed(false)`] if this connection is already closed,
     /// or fail with [`Error::Closed(true)`] if this connection was closed whilst trying to read the message.
-    pub fn receive<T>(&mut self) -> Result<T>
+    pub fn receive<T>(&self) -> Result<T>
     where
         T: DeserializeOwned,
     {
-        if self.closed {
+        let mut inner = self.inner.lock()?;
+        if inner.closed {
             return Err(Error::Closed(false));
         }
-        let message = self._receive()?;
+        let message = inner._receive()?;
         match message {
             Message::ClosingConnection => {
-                self._close();
+                inner._close();
                 Err(Error::Closed(true))
             }
             Message::Data(data) => Ok(data),
         }
     }
     /// Shorthand for calling [`send`](Self::send) and [`receive`](Self::receive) after one another.
-    pub fn send_and_receive<A, B>(&mut self, data: &A) -> Result<B>
+    pub fn send_and_receive<A, B>(&self, data: &A) -> Result<B>
     where
         A: Serialize,
         B: DeserializeOwned,
@@ -152,25 +173,22 @@ impl Connection {
         self.receive()
     }
 
-    fn _close(&mut self) {
-        self.internal.close();
-        self.closed = true;
-    }
-
     /// Closes this connection if it isn't already closed.
     /// This operation can never fail.
-    pub fn close(&mut self) {
-        if self.closed {
+    pub fn close(&self) {
+        let Ok(mut inner) = self.inner.lock() else { return };
+
+        if inner.closed {
             return;
         }
         // ignore the results of this - it doesn't matter since we're closing it either way
-        let _ = self._send::<()>(Message::ClosingConnection);
-        self._close();
+        let _ = inner._send::<()>(Message::ClosingConnection);
+        inner._close();
     }
 
     /// Check if this connection is closed.
     pub fn is_closed(&self) -> bool {
-        self.closed
+        self.inner.lock().map(|v| v.closed).unwrap_or(true)
     }
 }
 

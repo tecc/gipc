@@ -8,7 +8,7 @@ pub async fn main() {
     // Much like the synchronous connection, you connect using the `connect_to_socket` function.
     // It has the same parameters - the first one is the name of the socket, and the second is whether
     // the socket is global or not.
-    let mut connection = AsyncConnection::connect_to_socket(NAME, false)
+    let connection = AsyncConnection::connect_to_socket(NAME, false)
         .await
         .expect("Connection worked");
 

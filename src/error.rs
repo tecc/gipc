@@ -1,5 +1,7 @@
 //! A small module containing the [`Error`] and [`Result`] type.
 
+use std::sync::{Mutex, PoisonError};
+
 /// Error type for this library. Any error this library produces uses this to represent it.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -25,12 +27,20 @@ pub enum Error {
         #[from]
         tokio::task::JoinError,
     ),
+    /// Indicates that a Mutex or RwLock was poisoned.
+    #[error("mutex error: {0}")]
+    Poison(String),
     /// Indicates that something is closed.
     #[error("{}", if *.0 { "was closed by operation" } else { "already closed" })]
     Closed(
         #[doc = "Whether it was closed by the operation (`true`) or was already closed (`false`)"]
         bool,
     ),
+}
+impl<T> From<PoisonError<T>> for Error {
+    fn from(value: PoisonError<T>) -> Self {
+        Self::Poison(value.to_string())
+    }
 }
 /// Result type for this library. Shorthand for [`std::result::Result<T, Error>`].
 pub type Result<T> = std::result::Result<T, Error>;
