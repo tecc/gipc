@@ -8,7 +8,7 @@ pub fn main() {
     // Internally, gipc resolves the name to some location deterministically.
     // The second parameter here specifies whether or not to resolve the socket globally (i.e. when the listening process exists for the entire system).
     // In our case, it doesn't, so we set that parameter to false.
-    let mut connection =
+    let connection =
         Connection::connect_to_socket(NAME, false).expect("Connection should connect properly");
 
     // Once we've successfully connected, we can use its two main methods: `send` and `receive`.
